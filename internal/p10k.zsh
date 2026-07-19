@@ -215,6 +215,13 @@ function _p9k_fetch_cwd() {
   fi
   _p9k__cwd_a=${${_p9k__cwd:A}:-.}
 
+  if (( _POWERLEVEL9K_DIR_HYPERLINK )) &&
+     [[ $_p9k_os == Windows && $_p9k__cwd != $_p9k__cwd_win_cached_posix ]]; then
+    _p9k__cwd_win_cached_posix=$_p9k__cwd
+    _p9k__cwd_win=$(command cygpath -m -- "$_p9k__cwd" 2>/dev/null) ||
+      _p9k__cwd_win=
+  fi
+
   case $_p9k__cwd in
     /|.)
       _p9k__parent_dirs=()
@@ -2139,7 +2146,11 @@ prompt_dir() {
 
     local content="${(pj.$sep.)parts}"
     if (( _POWERLEVEL9K_DIR_HYPERLINK && _p9k_term_has_href )) && [[ $_p9k__cwd == /* ]]; then
-      _p9k_url_escape $_p9k__cwd
+      local cur_path=$_p9k__cwd
+      if [[ $_p9k_os == Windows ]]; then
+        cur_path=$_p9k__cwd_win
+      fi
+      _p9k_url_escape $cur_path
       local header=$'%{\e]8;;file://'$_p9k__ret$'\a%}'
       local footer=$'%{\e]8;;\a%}'
       if (( expand )); then
@@ -7269,6 +7280,10 @@ _p9k_init_vars() {
 
   typeset -g  _p9k__cwd
   typeset -g  _p9k__cwd_a
+
+  # Windows path
+  typeset -g _p9k__cwd_win_cached_posix
+  typeset -g _p9k__cwd_win
 
   # dir/pattern => dir mtime ':' num_matches
   typeset -gA _p9k__glob_cache
